@@ -1,0 +1,144 @@
+{
+  "title": "Purolator",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurer Purolator",
+        "description": "Le suivi Purolator ne nécessite ni compte ni code postal : le hub est créé immédiatement. Ajoutez ensuite des colis dans les options de l'intégration ou avec le service `purolator.track_parcel`."
+      }
+    },
+    "abort": {
+      "already_configured": "Purolator est déjà configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options Purolator",
+        "menu_options": {
+          "incoming_parcels": "Colis entrants",
+          "outgoing_parcels": "Colis sortants",
+          "settings": "Paramètres"
+        }
+      },
+      "incoming_parcels": {
+        "title": "Gérer les colis entrants",
+        "description": "Codes de suivi des colis que vous attendez. Les données de suivi de Purolator ne permettent pas de distinguer un colis que vous envoyez d'un colis que vous recevez : placez chaque code dans la liste qui lui correspond.",
+        "data": {
+          "tracking_codes": "Codes de suivi"
+        }
+      },
+      "outgoing_parcels": {
+        "title": "Gérer les colis sortants",
+        "description": "Codes de suivi des colis que vous avez envoyés. Ils sont comptés et signalés séparément et n'entrent donc pas dans votre total de colis entrants.",
+        "data": {
+          "tracking_codes": "Codes de suivi"
+        }
+      },
+      "settings": {
+        "title": "Paramètres",
+        "data": {
+          "delivered_filter_type": "Filtrer par",
+          "delivered_filter_amount": "Colis livrés : nombre",
+          "include_history": "Inclure l'historique des statuts"
+        }
+      }
+    },
+    "error": {
+      "invalid_tracking_code": "Cela ne ressemble pas à un code de suivi Purolator."
+    }
+  },
+  "selector": {
+    "delivered_filter_type": {
+      "options": {
+        "days": "Jours",
+        "parcels": "Nombre de colis"
+      }
+    },
+    "direction": {
+      "options": {
+        "incoming": "Entrant",
+        "outgoing": "Sortant"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "Suivre un colis",
+      "description": "Commencer à suivre un colis à l'aide de son code de suivi Purolator.",
+      "fields": {
+        "tracking_code": {
+          "name": "Code de suivi",
+          "description": "Le code de suivi Purolator."
+        },
+        "direction": {
+          "name": "Sens",
+          "description": "Indique si vous recevez ou envoyez ce colis. Les données de suivi de Purolator ne permettent pas de le distinguer. Si vous rappelez ce service avec l'autre sens, un colis déjà suivi est déplacé."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Ne plus suivre un colis",
+      "description": "Arrêter de suivre un colis à l'aide de son code de suivi Purolator.",
+      "fields": {
+        "tracking_code": {
+          "name": "Code de suivi",
+          "description": "Le code de suivi Purolator à ne plus suivre."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Un colis a été enregistré",
+      "parcel_status_changed": "Le statut d'un colis a changé",
+      "parcel_delivered": "Un colis a été livré",
+      "parcel_delivery_time_changed": "L'heure de livraison prévue d'un colis a changé",
+      "outgoing_parcel_status_changed": "Le statut d'un colis sortant a changé",
+      "outgoing_parcel_delivered": "Un colis sortant a été livré"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Actualiser"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Livraisons"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Colis entrants",
+        "unit_of_measurement": "colis"
+      },
+      "awaiting_pickup": {
+        "name": "En attente de retrait",
+        "unit_of_measurement": "colis"
+      },
+      "next_delivery": {
+        "name": "Prochaine livraison"
+      },
+      "delivered_parcels": {
+        "name": "Colis livrés",
+        "unit_of_measurement": "colis"
+      },
+      "outgoing_parcels": {
+        "name": "Colis sortants",
+        "unit_of_measurement": "colis"
+      },
+      "outgoing_delivered_parcels": {
+        "name": "Colis sortants livrés",
+        "unit_of_measurement": "colis"
+      },
+      "last_update": {
+        "name": "Dernière mise à jour réussie"
+      },
+      "parcel": {
+        "name": "Colis {barcode}"
+      }
+    }
+  }
+}

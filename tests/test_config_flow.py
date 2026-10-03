@@ -1,0 +1,186 @@
+"""Tests for the Purolator config and options flow."""
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.purolator.config_flow import (
+    normalize_tracking_code,
+    valid_tracking_code,
+)
+from custom_components.purolator.const import (
+    CONF_DELIVERED_FILTER_AMOUNT,
+    CONF_DELIVERED_FILTER_TYPE,
+    CONF_DIRECTION,
+    CONF_INCLUDE_HISTORY,
+    CONF_PARCELS,
+    CONF_TRACKING_CODE,
+    DIRECTION_INCOMING,
+    DIRECTION_OUTGOING,
+    DOMAIN,
+)
+
+
+def test_normalize_tracking_code_strips_and_uppercases():
+    assert normalize_tracking_code("example 123-456") == "EXAMPLE123456"
+    assert normalize_tracking_code("") == ""
+    assert normalize_tracking_code(None) == ""
+
+
+def test_valid_tracking_code_accepts_any_non_empty_code():
+    assert valid_tracking_code("EXAMPLE123456")
+    assert valid_tracking_code("ABC")
+    assert valid_tracking_code("A" * 31)
+    assert not valid_tracking_code("")
+
+
+async def test_user_flow_creates_hub_without_input(hass):
+    """No account, no postcode — the entry is created straight away."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    assert result["type"] == "create_entry"
+    assert result["title"] == "Purolator"
+    assert result["options"][CONF_PARCELS] == []
+
+
+async def test_second_hub_rejected(hass):
+    MockConfigEntry(domain=DOMAIN, unique_id=DOMAIN).add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    assert result["type"] == "abort"
+    # single_config_entry in the manifest aborts before the flow runs.
+    assert result["reason"] == "single_instance_allowed"
+
+
+async def _open_options_step(hass, entry, step_id: str):
+    """Start the options flow and select one of its three top-level routes."""
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "menu"
+    assert result["menu_options"] == [
+        "incoming_parcels",
+        "outgoing_parcels",
+        "settings",
+    ]
+    return await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": step_id}
+    )
+
+
+def _suggested_codes(result) -> list[str]:
+    """The codes the form is pre-filled with, as HA seeds them."""
+    for key in result["data_schema"].schema:
+        if key == "tracking_codes":
+            return key.description["suggested_value"]
+    raise AssertionError("no tracking_codes field in the form")
+
+
+async def _submit_codes(hass, entry, step_id: str, codes: list[str]):
+    """Replace one direction's tracked-code list."""
+    result = await _open_options_step(hass, entry, step_id)
+    return await hass.config_entries.options.async_configure(
+        result["flow_id"], {"tracking_codes": codes}
+    )
+
+
+async def test_options_parcel_list_can_be_cleared(hass):
+    """A submitted empty list removes the final manually tracked parcel."""
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]})
+    entry.add_to_hass(hass)
+    result = await _submit_codes(hass, entry, "incoming_parcels", [])
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_PARCELS] == []
+
+
+async def test_options_records_the_direction_of_each_list(hass):
+    """Purolator's payload can't reveal direction — the list a code is in does."""
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: []})
+    entry.add_to_hass(hass)
+
+    result = await _submit_codes(hass, entry, "incoming_parcels", ["EXAMPLE111111"])
+    assert result["data"][CONF_PARCELS] == [
+        {CONF_TRACKING_CODE: "EXAMPLE111111", CONF_DIRECTION: DIRECTION_INCOMING}
+    ]
+
+    hass.config_entries.async_update_entry(entry, options=result["data"])
+    result = await _submit_codes(hass, entry, "outgoing_parcels", ["EXAMPLE222222"])
+    assert result["data"][CONF_PARCELS] == [
+        {CONF_TRACKING_CODE: "EXAMPLE111111", CONF_DIRECTION: DIRECTION_INCOMING},
+        {CONF_TRACKING_CODE: "EXAMPLE222222", CONF_DIRECTION: DIRECTION_OUTGOING},
+    ]
+
+
+async def test_options_one_direction_leaves_the_other_alone(hass):
+    """Editing one list must not drop the parcels filed in the other."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        options={
+            CONF_PARCELS: [
+                {CONF_TRACKING_CODE: "EXAMPLE111111", CONF_DIRECTION: DIRECTION_INCOMING},
+                {CONF_TRACKING_CODE: "EXAMPLE222222", CONF_DIRECTION: DIRECTION_OUTGOING},
+            ]
+        },
+    )
+    entry.add_to_hass(hass)
+    result = await _submit_codes(hass, entry, "incoming_parcels", [])
+    assert result["data"][CONF_PARCELS] == [
+        {CONF_TRACKING_CODE: "EXAMPLE222222", CONF_DIRECTION: DIRECTION_OUTGOING}
+    ]
+
+
+async def test_options_resubmitting_a_code_moves_it(hass):
+    """Filing a code in the other list is how a wrong direction is corrected."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        options={
+            CONF_PARCELS: [
+                {CONF_TRACKING_CODE: "EXAMPLE111111", CONF_DIRECTION: DIRECTION_INCOMING}
+            ]
+        },
+    )
+    entry.add_to_hass(hass)
+    result = await _submit_codes(hass, entry, "outgoing_parcels", ["EXAMPLE111111"])
+    assert result["data"][CONF_PARCELS] == [
+        {CONF_TRACKING_CODE: "EXAMPLE111111", CONF_DIRECTION: DIRECTION_OUTGOING}
+    ]
+
+
+async def test_options_list_shows_only_its_own_direction(hass):
+    """The form is seeded with this direction's codes, not every tracked one."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        options={
+            CONF_PARCELS: [
+                {CONF_TRACKING_CODE: "EXAMPLE111111"},
+                {CONF_TRACKING_CODE: "EXAMPLE222222", CONF_DIRECTION: DIRECTION_OUTGOING},
+            ]
+        },
+    )
+    entry.add_to_hass(hass)
+
+    # An entry without a direction key predates the option and reads incoming.
+    result = await _open_options_step(hass, entry, "incoming_parcels")
+    assert _suggested_codes(result) == ["EXAMPLE111111"]
+
+    result = await _open_options_step(hass, entry, "outgoing_parcels")
+    assert _suggested_codes(result) == ["EXAMPLE222222"]
+
+
+async def test_options_rejects_an_empty_after_normalisation_code(hass):
+    """A code that sanitises down to nothing is dropped, not stored blank."""
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: []})
+    entry.add_to_hass(hass)
+    result = await _submit_codes(hass, entry, "incoming_parcels", ["---", " "])
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_PARCELS] == []
+
+
+async def test_options_settings_preserve_parcel_list(hass):
+    """Saving settings must never replace the manually tracked parcel list."""
+    parcels = [{CONF_TRACKING_CODE: "EXAMPLE111111"}]
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: parcels})
+    entry.add_to_hass(hass)
+    result = await _open_options_step(hass, entry, "settings")
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_DELIVERED_FILTER_TYPE: "days", CONF_DELIVERED_FILTER_AMOUNT: 7, CONF_INCLUDE_HISTORY: False}
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_PARCELS] == parcels
