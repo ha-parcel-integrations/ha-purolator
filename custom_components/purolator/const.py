@@ -38,7 +38,7 @@ KNOWN_CAPABILITIES = frozenset(
 # Every value not listed here comes back as a literal ``None`` from
 # normalize_parcel(). The docs site's carrier comparison table is generated
 # straight from this constant, so keep it in agreement with parcels.py.
-# ``dimensions`` and ``pickup_point`` are never exposed by the endpoint.
+# ``dimensions`` is never exposed by the endpoint.
 CAPABILITIES = frozenset({"weight", "delivery_window", "url", "history"})
 
 # Fields whose support is not confirmed yet — typically a carrier built without
@@ -50,7 +50,9 @@ CAPABILITIES = frozenset({"weight", "delivery_window", "url", "history"})
 # into CAPABILITIES. A multi-backend carrier declares
 # PENDING_CAPABILITIES_BY_VARIANT with the same keys as its
 # CAPABILITIES_BY_VARIANT instead (omit backends with nothing pending).
-PENDING_CAPABILITIES: frozenset[str] = frozenset()
+# Only a home-delivered parcel has been seen; a parcel waiting at a pickup
+# location may carry the location in the response.
+PENDING_CAPABILITIES = frozenset({"pickup_point"})
 
 # If this carrier ever grows a second backend with a genuinely different
 # payload shape (a country-specific API, not just a config option), replace

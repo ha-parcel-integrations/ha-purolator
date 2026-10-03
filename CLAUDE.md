@@ -76,8 +76,11 @@ empty search result.
   the last resort. The ETA is a bare date, mapped to midnight in the last
   event's zone as `planned_from` only.
 - **Fields that are `None` on purpose:** `sender`, `receiver`, `dimensions`,
-  `pickup_point`, `planned_to`. `weight` is converted to kg and only set for
-  single-piece shipments. `CAPABILITIES` matches.
+  `planned_to`. `weight` is converted to kg and only set for single-piece
+  shipments. `CAPABILITIES` matches.
+- **`pickup_point` is pending**, not absent: only a home-delivered parcel has
+  been seen, so whether a parcel at a pickup location names it is open. It
+  stays `None` until a real pickup parcel shows it.
 - **Outgoing parcels** follow the account-less pattern: the user files each
   code under Incoming or Outgoing (`direction` on the options entries,
   default incoming), because the response cannot reveal it. Outgoing has its
