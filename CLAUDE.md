@@ -45,15 +45,28 @@ you act in one of these areas:
 
 ## Carrier-specific notes
 
-Pre-1.0: only delivered parcels have been seen on the wire. Statuses for
-returns and exceptions, an in-transit-only response and behaviour under
-repeated polling are unconfirmed. Every unknown logs a one-shot WARNING with
-the issue link: unmapped event codes, event codes mapped from outside evidence
-and never seen live (`_CONFIRMED_CODES` in `parcels.py` lists the exceptions),
-shipment/package status values other than the delivered one, a weight unit
-other than pounds, more than one shipment or package, and an unexpected or
-empty search result.
+Pre-1.0. A 2026-10-17 sweep of six real parcels closed the gap between
+`_STATUS_MAP` and `_CONFIRMED_CODES`: **every shipped event code is now
+wire-confirmed**, including the pickup-point (`9550`), delivered (`9500`) and
+failed-attempt (`9260`) codes that previously came from outside evidence, plus
+six new ones the sweep found unmapped — a label created (`3000`), a delivery
+scheduled for the next business day (`6720`), two transit delays (`0500`,
+`0510`) and two address corrections (`6500`, `9230`). The
+mapped-but-unconfirmed guard stays in place for the next code added ahead of a
+real parcel; a test pins it with a stand-in. Package status `SDR`
+("Shipment Created") is in `_SEEN_STATUS_CODES` alongside `DEL`.
 
+Still unconfirmed: a genuine return, and whether a parcel in transit ever
+reports differently from these. Every unknown still logs a one-shot WARNING
+with the issue link: unmapped event codes, a shipment/package status outside
+`_SEEN_STATUS_CODES`, a weight unit other than pounds, more than one shipment
+or package, and an unexpected or empty search result.
+
+- **The edge bot-challenges sustained polling.** Six sequential lookups paced
+  1.2 s apart went through; the seventh and every one after it came back
+  HTTP 405 within the same run. That is what the 30/60-minute cadence and the
+  `blocked=True` backoff exist for, and it is worth remembering before anyone
+  proposes tightening the interval or batching lookups.
 - **Code-only, one hub.** One request per tracking code, no batching, no
   postcode, no account. `valid_tracking_code` accepts any non-empty code.
 - **Browser User-Agent is required.** The edge in front of the endpoint
@@ -78,9 +91,10 @@ empty search result.
 - **Fields that are `None` on purpose:** `sender`, `receiver`, `dimensions`,
   `planned_to`. `weight` is converted to kg and only set for single-piece
   shipments. `CAPABILITIES` matches.
-- **`pickup_point` is pending**, not absent: only a home-delivered parcel has
-  been seen, so whether a parcel at a pickup location names it is open. It
-  stays `None` until a real pickup parcel shows it.
+- **`pickup_point` is pending**, not absent: `9550` ("Available for pickup for
+  5 business days from arrival date at the counter") is confirmed as a status,
+  but no captured parcel named the counter in a field, so whether one exists is
+  still open. It stays `None` until a real pickup parcel shows it.
 - **Outgoing parcels** follow the account-less pattern: the user files each
   code under Incoming or Outgoing (`direction` on the options entries,
   default incoming), because the response cannot reveal it. Outgoing has its

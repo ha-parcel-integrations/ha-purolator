@@ -11,6 +11,7 @@ import pytest
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+import custom_components.purolator.parcels as parcels_module
 from custom_components.purolator.const import (
     CAPABILITIES,
     CONF_DELIVERED_FILTER_AMOUNT,
@@ -556,20 +557,32 @@ def test_missing_search_result_still_normalizes():
     assert normalize_parcel(sample)["status"] == ParcelStatus.DELIVERED
 
 
-def test_unconfirmed_mapping_warns_once_per_code(caplog):
-    assert map_parcel_status("9260") == ParcelStatus.PROBLEM
-    assert map_event_status("9260") == ParcelStatus.PROBLEM
+def test_unconfirmed_mapping_warns_once_per_code(monkeypatch, caplog):
+    """Every shipped code is wire-confirmed now, so this uses a stand-in.
+
+    The guard still has to work for the next code added to the map ahead of a
+    real parcel, which is why it is tested rather than removed.
+    """
+    monkeypatch.setitem(parcels_module._STATUS_MAP, "9999", ParcelStatus.PROBLEM)
+    assert map_parcel_status("9999") == ParcelStatus.PROBLEM
+    assert map_event_status("9999") == ParcelStatus.PROBLEM
     lines = [r.getMessage() for r in caplog.records if "confirm this mapping" in r.getMessage()]
     assert len(lines) == 1
-    assert "9260" in lines[0]
+    assert "9999" in lines[0]
     assert "unrecognised_status.yml" in lines[0]
+
+
+def test_every_shipped_code_is_wire_confirmed():
+    """The 2026-10-17 sweep closed the last gap between the two sets."""
+    assert set(parcels_module._STATUS_MAP) <= parcels_module._CONFIRMED_CODES
 
 
 @pytest.mark.parametrize(
     "code",
     [
         "3010", "2300", "2380", "7810", "0300", "4060", "7220", "1300",
-        "7520", "7525", "4100", "4200", "9000",
+        "7520", "7525", "4100", "4200", "9000", "3000", "6720", "0500",
+        "0510", "6500", "9230", "9260", "9500", "9550",
     ],
 )
 def test_wire_confirmed_codes_do_not_warn(code, caplog):

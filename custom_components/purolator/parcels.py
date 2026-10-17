@@ -63,6 +63,13 @@ _STATUS_MAP: dict[str, ParcelStatus] = {
     "7525": ParcelStatus.IN_TRANSIT,
     "4100": ParcelStatus.IN_TRANSIT,
     "4200": ParcelStatus.OUT_FOR_DELIVERY,
+    # Confirmed live 2026-10-17, each by its own event description.
+    "3000": ParcelStatus.REGISTERED,  # shipper created a label
+    "6720": ParcelStatus.IN_TRANSIT,  # scheduled for delivery next business day
+    "0500": ParcelStatus.IN_TRANSIT,  # delayed in transit, missed connection
+    "0510": ParcelStatus.IN_TRANSIT,  # delayed in transit, rail delay
+    "6500": ParcelStatus.PROBLEM,  # address correction in progress
+    "9230": ParcelStatus.PROBLEM,  # address correction, missing entry code
     "9260": ParcelStatus.PROBLEM,
     "9550": ParcelStatus.AT_PICKUP_POINT,
     "9000": ParcelStatus.DELIVERED,
@@ -72,6 +79,10 @@ _STATUS_MAP: dict[str, ParcelStatus] = {
 # Shipment/package ``status.code`` once everything has been handed over.
 _DELIVERED_STATUS_CODE = "DEL"
 
+# Other shipment/package ``status.code`` values seen live, so they stop asking
+# to be reported. ``SDR`` is "Shipment Created" — a label, nothing moving yet.
+_SEEN_STATUS_CODES = frozenset({_DELIVERED_STATUS_CODE, "SDR"})
+
 _LB_TO_KG = 0.45359237
 
 # Event codes seen on the wire. The rest of the map comes from a third-party
@@ -80,6 +91,9 @@ _CONFIRMED_CODES = frozenset(
     {
         "3010", "2300", "2380", "7810", "0300", "4060", "7220", "1300",
         "7520", "7525", "4100", "4200", "9000",
+        # added by the 2026-10-17 sweep of six real parcels
+        "3000", "6720", "0500", "0510", "6500", "9230", "9260", "9500",
+        "9550",
     }
 )
 
@@ -337,7 +351,7 @@ def _warn_unseen_status_code(*containers: dict) -> None:
     """Warn once per shipment/package ``status.code`` other than the delivered one."""
     for container in containers:
         code = (container.get("status") or {}).get("code")
-        if code and code != _DELIVERED_STATUS_CODE:
+        if code and code not in _SEEN_STATUS_CODES:
             _warn_once(
                 f"pkgstatus:{code}",
                 "Purolator package status code %s has not been seen before "
