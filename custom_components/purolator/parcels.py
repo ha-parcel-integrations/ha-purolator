@@ -201,13 +201,17 @@ _PROVINCE_ZONES = {
 }
 
 
+# Built once at import: constructing a ZoneInfo reads the tz file from disk.
+_ZONES = {name: ZoneInfo(name) for name in set(_PROVINCE_ZONES.values())}
+
+
 def event_zone(event: Any) -> ZoneInfo | None:
     """Return the zone of the place an event happened, or ``None`` if unknown."""
     if not isinstance(event, dict):
         return None
     province = (event.get("location") or {}).get("provinceState")
     name = _PROVINCE_ZONES.get(str(province).strip().upper()) if province else None
-    return ZoneInfo(name) if name else None
+    return _ZONES[name] if name else None
 
 
 def to_iso_timestamp(value: Any, zone: tzinfo | None = None) -> str | None:
