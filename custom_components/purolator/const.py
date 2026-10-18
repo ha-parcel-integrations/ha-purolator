@@ -81,6 +81,7 @@ API_KEY_HEADER = "x-api-key"
 
 # A generic client User-Agent gets an HTML 403 from the CDN before the request
 # reaches the API; a browser string passes.
+# suite: allow browser user-agent (the CDN answers a generic client UA with a 403, per the note above)
 BROWSER_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
