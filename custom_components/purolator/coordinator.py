@@ -137,6 +137,8 @@ class PurolatorCoordinator(DataUpdateCoordinator[list[dict]]):
     the code was filed under — the response cannot supply it.
     """
 
+    config_entry: ConfigEntry
+
     def __init__(
         self,
         hass: HomeAssistant,
