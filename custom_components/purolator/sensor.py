@@ -1,8 +1,9 @@
 """Sensor platform for the Purolator parcel tracker integration."""
+
 from __future__ import annotations
 
-import logging
 from datetime import datetime
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -40,7 +41,6 @@ def _active_barcodes(coordinator: PurolatorCoordinator) -> set[str]:
     return {p.get("barcode", "") for p in _active_parcels(coordinator)}
 
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: PurolatorConfigEntry,
@@ -75,7 +75,7 @@ async def async_setup_entry(
             and entity_entry.unique_id.startswith(f"{entry_id}_")
             and entity_entry.unique_id not in non_parcel_unique_ids
         ):
-            barcode = entity_entry.unique_id[len(f"{entry_id}_"):]
+            barcode = entity_entry.unique_id[len(f"{entry_id}_") :]
             if barcode not in current_barcodes:
                 registry.async_remove(entity_entry.entity_id)
 
@@ -85,10 +85,10 @@ async def async_setup_entry(
         ),
         PurolatorAwaitingPickupSensor(coordinator, entry),
     ]
-    for parcel in _active_parcels(coordinator):
-        entities.append(
-            PurolatorParcelSensor(coordinator, entry, parcel.get("barcode", ""))
-        )
+    entities.extend(
+        PurolatorParcelSensor(coordinator, entry, parcel.get("barcode", ""))
+        for parcel in _active_parcels(coordinator)
+    )
     entities.append(PurolatorNextDeliverySensor(coordinator, entry))
     entities.append(PurolatorDeliveredParcelsSensor(coordinator, entry))
     entities.append(PurolatorOutgoingParcelsSensor(coordinator, entry))
@@ -247,9 +247,7 @@ class PurolatorNextDeliverySensor(
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_attribution = ATTRIBUTION
 
-    def __init__(
-        self, coordinator: PurolatorCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: PurolatorCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_next_delivery"
@@ -299,9 +297,7 @@ class PurolatorDeliveredParcelsSensor(
     _attr_attribution = ATTRIBUTION
     _unrecorded_attributes = frozenset({"parcels"})
 
-    def __init__(
-        self, coordinator: PurolatorCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: PurolatorCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_delivered_parcels"
@@ -329,9 +325,7 @@ class PurolatorOutgoingParcelsSensor(
     _attr_attribution = ATTRIBUTION
     _unrecorded_attributes = frozenset({"parcels"})
 
-    def __init__(
-        self, coordinator: PurolatorCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: PurolatorCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_outgoing_parcels"
@@ -359,9 +353,7 @@ class PurolatorOutgoingDeliveredParcelsSensor(
     _attr_attribution = ATTRIBUTION
     _unrecorded_attributes = frozenset({"parcels"})
 
-    def __init__(
-        self, coordinator: PurolatorCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: PurolatorCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_outgoing_delivered_parcels"
@@ -378,9 +370,7 @@ class PurolatorOutgoingDeliveredParcelsSensor(
         return {"parcels": self.coordinator.delivered_outgoing or []}
 
 
-class PurolatorLastUpdateSensor(
-    CoordinatorEntity[PurolatorCoordinator], SensorEntity
-):
+class PurolatorLastUpdateSensor(CoordinatorEntity[PurolatorCoordinator], SensorEntity):
     """Diagnostic sensor reporting when Purolator was last polled successfully."""
 
     _attr_has_entity_name = True
@@ -389,9 +379,7 @@ class PurolatorLastUpdateSensor(
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_attribution = ATTRIBUTION
 
-    def __init__(
-        self, coordinator: PurolatorCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: PurolatorCoordinator, entry: ConfigEntry) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_last_update"

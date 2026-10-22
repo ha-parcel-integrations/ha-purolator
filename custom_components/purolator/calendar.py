@@ -1,4 +1,5 @@
 """Calendar platform for the Purolator parcel tracker integration."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -20,17 +21,20 @@ PARALLEL_UPDATES = 0
 _DEFAULT_EVENT_DURATION = timedelta(hours=1)
 
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: PurolatorConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Purolator deliveries calendar from a config entry."""
-    async_add_entities([PurolatorDeliveriesCalendar(entry.runtime_data.coordinator, entry)])
+    async_add_entities(
+        [PurolatorDeliveriesCalendar(entry.runtime_data.coordinator, entry)]
+    )
 
 
-class PurolatorDeliveriesCalendar(CoordinatorEntity[PurolatorCoordinator], CalendarEntity):
+class PurolatorDeliveriesCalendar(
+    CoordinatorEntity[PurolatorCoordinator], CalendarEntity
+):
     """A read-only calendar of expected Purolator deliveries.
 
     Each active tracked parcel with a known delivery moment becomes an event.

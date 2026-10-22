@@ -1,4 +1,5 @@
 """Tests for Purolator device triggers."""
+
 from unittest.mock import AsyncMock
 
 from custom_components.purolator.const import DOMAIN

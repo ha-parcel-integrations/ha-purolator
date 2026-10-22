@@ -1,10 +1,11 @@
 """Tests for the Purolator services (track_parcel / untrack_parcel)."""
+
 from unittest.mock import AsyncMock, patch
 
-import pytest
-import voluptuous as vol
 from homeassistant.exceptions import ServiceValidationError
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+import voluptuous as vol
 
 from custom_components.purolator.const import (
     CONF_DIRECTION,
@@ -18,7 +19,6 @@ from custom_components.purolator.const import (
 from .payloads import active_sample
 
 _SAMPLE = active_sample()
-
 
 
 async def _setup(hass, parcels: list[dict] | None = None) -> MockConfigEntry:
@@ -103,9 +103,7 @@ async def test_track_parcel_duplicate_is_noop(hass):
 
 
 async def test_untrack_parcel_removes_from_options(hass):
-    entry = await _setup(
-        hass, parcels=[{CONF_TRACKING_CODE: "EXAMPLE999999"}]
-    )
+    entry = await _setup(hass, parcels=[{CONF_TRACKING_CODE: "EXAMPLE999999"}])
     with patch(
         "custom_components.purolator.api.PurolatorApiClient.async_get_parcel",
         new=AsyncMock(return_value=_SAMPLE),
@@ -122,9 +120,7 @@ async def test_untrack_parcel_removes_from_options(hass):
 
 
 async def test_untrack_unknown_code_is_noop(hass):
-    entry = await _setup(
-        hass, parcels=[{CONF_TRACKING_CODE: "EXAMPLE999999"}]
-    )
+    entry = await _setup(hass, parcels=[{CONF_TRACKING_CODE: "EXAMPLE999999"}])
     with patch(
         "custom_components.purolator.api.PurolatorApiClient.async_get_parcel",
         new=AsyncMock(return_value=_SAMPLE),

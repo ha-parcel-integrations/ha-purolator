@@ -1,4 +1,5 @@
 """Tests for Purolator setup and unload."""
+
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import ConfigEntryState
@@ -6,11 +7,7 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.purolator.api import PurolatorApiError
-from custom_components.purolator.const import (
-    CONF_PARCELS,
-    CONF_TRACKING_CODE,
-    DOMAIN,
-)
+from custom_components.purolator.const import CONF_PARCELS, CONF_TRACKING_CODE, DOMAIN
 
 from .payloads import ACTIVE_CODE, active_sample
 
@@ -87,7 +84,9 @@ async def test_per_parcel_sensor_spawn_and_remove(hass):
     entry.add_to_hass(hass)
 
     mock = AsyncMock(return_value=_sample())
-    with patch("custom_components.purolator.api.PurolatorApiClient.async_get_parcel", new=mock):
+    with patch(
+        "custom_components.purolator.api.PurolatorApiClient.async_get_parcel", new=mock
+    ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -123,7 +122,9 @@ async def test_options_update_applies_live_without_reload(hass):
     entry.add_to_hass(hass)
 
     mock = AsyncMock(return_value=_sample())
-    with patch("custom_components.purolator.api.PurolatorApiClient.async_get_parcel", new=mock):
+    with patch(
+        "custom_components.purolator.api.PurolatorApiClient.async_get_parcel", new=mock
+    ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 

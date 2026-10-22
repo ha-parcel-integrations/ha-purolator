@@ -1,4 +1,5 @@
 """Tests for the Purolator API client."""
+
 import json
 import logging
 from unittest.mock import AsyncMock, MagicMock
@@ -6,10 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import aiohttp
 import pytest
 
-from custom_components.purolator.api import (
-    PurolatorApiClient,
-    PurolatorApiError,
-)
+from custom_components.purolator.api import PurolatorApiClient, PurolatorApiError
 
 from .payloads import delivered_sample
 
@@ -54,7 +52,10 @@ async def test_get_parcel_returns_full_response_and_sends_request_shape():
 
 
 async def test_semantic_miss_is_none_not_an_error():
-    body = {"searchResult": [{"trackingId": CODE, "status": "NOT FOUND"}], "shipment": []}
+    body = {
+        "searchResult": [{"trackingId": CODE, "status": "NOT FOUND"}],
+        "shipment": [],
+    }
     assert await _client(_session_returning(200, body)).async_get_parcel(CODE) is None
 
 
@@ -76,7 +77,9 @@ async def test_found_without_shipment_is_none_and_warns_once(caplog):
 
 async def test_403_is_a_blocked_failure_without_request_details_in_the_message():
     with pytest.raises(PurolatorApiError) as err:
-        await _client(_session_returning(403, {"message": "Forbidden"})).async_get_parcel(CODE)
+        await _client(
+            _session_returning(403, {"message": "Forbidden"})
+        ).async_get_parcel(CODE)
     assert err.value.status_code == 403
     assert err.value.backoff
     assert KEY not in str(err.value)
@@ -130,7 +133,9 @@ async def test_non_object_body_raises():
         await _client(_session_returning(200, ["a"])).async_get_parcel(CODE)
 
 
-@pytest.mark.parametrize("body", [{}, {"searchResult": []}, {"searchResult": [{"status": "WEIRD"}]}])
+@pytest.mark.parametrize(
+    "body", [{}, {"searchResult": []}, {"searchResult": [{"status": "WEIRD"}]}]
+)
 async def test_unexpected_search_result_raises_and_warns_once(body, caplog):
     client = _client(_session_returning(200, body))
     with caplog.at_level(logging.WARNING):

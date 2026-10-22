@@ -4,14 +4,14 @@ These need no Home Assistant instance — the whole point of keeping
 ``parcels.py`` free of I/O is that the carrier-specific mapping (the part you
 rewrite per carrier) can be tested as plain functions.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-import pytest
 from homeassistant.util import dt as dt_util
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-import custom_components.purolator.parcels as parcels_module
 from custom_components.purolator.const import (
     CAPABILITIES,
     CONF_DELIVERED_FILTER_AMOUNT,
@@ -21,6 +21,7 @@ from custom_components.purolator.const import (
     PENDING_CAPABILITIES,
     ParcelStatus,
 )
+import custom_components.purolator.parcels as parcels_module
 from custom_components.purolator.parcels import (
     apply_delivered_filter,
     build_history,
@@ -43,7 +44,7 @@ from .payloads import active_sample, delivered_sample, event, pickup_sample
 
 
 @pytest.mark.parametrize(
-    "code,expected",
+    ("code", "expected"),
     [
         ("3010", ParcelStatus.REGISTERED),
         ("2380", ParcelStatus.IN_TRANSIT),
@@ -99,7 +100,7 @@ def test_unmapped_status_warns_only_once(caplog):
 def test_parse_iso_handles_z_naive_and_garbage():
     assert parse_iso("2026-04-29T13:12:42Z").tzinfo is not None
     # A naive value is assumed UTC so mixed lists still sort.
-    assert parse_iso("2026-04-29T13:12:42").tzinfo == timezone.utc
+    assert parse_iso("2026-04-29T13:12:42").tzinfo == UTC
     assert parse_iso("not-a-date") is None
     assert parse_iso(None) is None
 
@@ -108,9 +109,6 @@ def test_to_iso_timestamp_attaches_the_configured_timezone():
     previous = dt_util.get_default_time_zone()
     dt_util.set_default_time_zone(ZoneInfo("America/Toronto"))
     try:
-        assert (
-            "2026-01-01T12:00:00-05:00" == "2026-01-01T12:00:00-05:00"
-        )
         assert to_iso_timestamp("2026-01-01") == "2026-01-01T00:00:00-05:00"
     finally:
         dt_util.set_default_time_zone(previous)
@@ -277,7 +275,10 @@ def test_normalize_delivered_parcel():
     # A delivered parcel drops its ETA once it has arrived.
     assert parcel["planned_from"] is None
     assert parcel["planned_to"] is None
-    assert parcel["url"] == "https://www.purolator.com/en/shipping/tracker?pin=TST000000001"
+    assert (
+        parcel["url"]
+        == "https://www.purolator.com/en/shipping/tracker?pin=TST000000001"
+    )
     assert parcel["weight"] == 1.134  # 2.5 lb
     assert parcel["dimensions"] is None
     assert parcel["pickup_point"] is None
@@ -385,7 +386,9 @@ def test_normalize_falls_back_to_last_event_field_without_events():
     sample = active_sample()
     package = _package(sample)
     package["events"] = []
-    package["lastEvent"] = event("4200", "2026-01-01 09:00:00", "On vehicle for delivery")
+    package["lastEvent"] = event(
+        "4200", "2026-01-01 09:00:00", "On vehicle for delivery"
+    )
     assert normalize_parcel(sample)["status"] == ParcelStatus.OUT_FOR_DELIVERY
 
 
@@ -474,7 +477,7 @@ def _entry(filter_type: str, amount: int) -> MockConfigEntry:
 
 
 def _delivered_pair() -> list[dict]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {"barcode": "RECENT", "delivered_at": (now - timedelta(days=1)).isoformat()},
         {"barcode": "OLD", "delivered_at": (now - timedelta(days=30)).isoformat()},
@@ -566,7 +569,11 @@ def test_unconfirmed_mapping_warns_once_per_code(monkeypatch, caplog):
     monkeypatch.setitem(parcels_module._STATUS_MAP, "9999", ParcelStatus.PROBLEM)
     assert map_parcel_status("9999") == ParcelStatus.PROBLEM
     assert map_event_status("9999") == ParcelStatus.PROBLEM
-    lines = [r.getMessage() for r in caplog.records if "confirm this mapping" in r.getMessage()]
+    lines = [
+        r.getMessage()
+        for r in caplog.records
+        if "confirm this mapping" in r.getMessage()
+    ]
     assert len(lines) == 1
     assert "9999" in lines[0]
     assert "unrecognised_status.yml" in lines[0]
@@ -580,9 +587,28 @@ def test_every_shipped_code_is_wire_confirmed():
 @pytest.mark.parametrize(
     "code",
     [
-        "3010", "2300", "2380", "7810", "0300", "4060", "7220", "1300",
-        "7520", "7525", "4100", "4200", "9000", "3000", "6720", "0500",
-        "0510", "6500", "9230", "9260", "9500", "9550",
+        "3010",
+        "2300",
+        "2380",
+        "7810",
+        "0300",
+        "4060",
+        "7220",
+        "1300",
+        "7520",
+        "7525",
+        "4100",
+        "4200",
+        "9000",
+        "3000",
+        "6720",
+        "0500",
+        "0510",
+        "6500",
+        "9230",
+        "9260",
+        "9500",
+        "9550",
     ],
 )
 def test_wire_confirmed_codes_do_not_warn(code, caplog):
@@ -596,7 +622,11 @@ def test_unseen_package_status_code_warns_once_per_value(caplog):
     sample["shipment"][0]["status"]["code"] = "XYZ"
     normalize_parcel(sample)
     normalize_parcel(sample)
-    lines = [r.getMessage() for r in caplog.records if "package status code" in r.getMessage()]
+    lines = [
+        r.getMessage()
+        for r in caplog.records
+        if "package status code" in r.getMessage()
+    ]
     assert len(lines) == 1
     assert "XYZ" in lines[0]
     assert "unrecognised_status.yml" in lines[0]
@@ -619,7 +649,9 @@ def test_non_lb_weight_unit_warns_once_and_leaves_weight_empty(caplog):
 
 def test_tracked_direction_defaults_to_incoming():
     assert tracked_direction({"tracking_code": "X"}) == "incoming"
-    assert tracked_direction({"tracking_code": "X", "direction": "outgoing"}) == "outgoing"
+    assert (
+        tracked_direction({"tracking_code": "X", "direction": "outgoing"}) == "outgoing"
+    )
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,5 @@
 """Tests for the Purolator refresh button."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.purolator.button import PurolatorRefreshButton

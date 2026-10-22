@@ -12,10 +12,11 @@ timestamp parsing, the history builder, the sort contract, the delivered
 filter, the one-shot warning for unmapped statuses — is suite-wide machinery
 and should be left alone.
 """
+
 from __future__ import annotations
 
+from datetime import UTC, date, datetime, timedelta, tzinfo
 import logging
-from datetime import date, datetime, timedelta, timezone, tzinfo
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -89,10 +90,28 @@ _LB_TO_KG = 0.45359237
 # client and stays unconfirmed until a real parcel shows them.
 _CONFIRMED_CODES = frozenset(
     {
-        "3010", "2300", "2380", "7810", "0300", "4060", "7220", "1300",
-        "7520", "7525", "4100", "4200", "9000",
+        "3010",
+        "2300",
+        "2380",
+        "7810",
+        "0300",
+        "4060",
+        "7220",
+        "1300",
+        "7520",
+        "7525",
+        "4100",
+        "4200",
+        "9000",
         # added by the 2026-10-17 sweep of six real parcels
-        "3000", "6720", "0500", "0510", "6500", "9230", "9260", "9500",
+        "3000",
+        "6720",
+        "0500",
+        "0510",
+        "6500",
+        "9230",
+        "9260",
+        "9500",
         "9550",
     }
 )
@@ -107,7 +126,11 @@ def _warn_once(key: str, message: str, *args: Any) -> None:
     if key in _unmapped_statuses_logged:
         return
     _unmapped_statuses_logged.add(key)
-    _LOGGER.warning(message + " Open an issue and paste this line: %s", *args, NEW_ISSUE_URL)
+    _LOGGER.warning(
+        "%s Open an issue and paste this line: %s",
+        message % args,
+        NEW_ISSUE_URL,
+    )
 
 
 def _warn_unmapped_status(code: str) -> None:
@@ -173,11 +196,11 @@ def parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value))
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -288,7 +311,10 @@ def build_history(
             "status": map_event_status(event.get("code")),
             "raw_status": event.get("description") or event.get("code"),
         }
-        parseable.append((parse_iso(timestamp), entry))
+        parsed = parse_iso(timestamp)
+        if parsed is None:
+            continue
+        parseable.append((parsed, entry))
     parseable.sort(key=lambda item: item[0])
     ordered = [entry for _, entry in parseable]
     return ordered[-max_events:]
@@ -310,7 +336,11 @@ def _pick(value: Any, index: Any) -> dict:
     """Return ``value[index]`` when it is a dict, else ``{}``."""
     if not isinstance(index, int) or isinstance(index, bool) or index < 0:
         index = 0
-    if isinstance(value, list) and index < len(value) and isinstance(value[index], dict):
+    if (
+        isinstance(value, list)
+        and index < len(value)
+        and isinstance(value[index], dict)
+    ):
         return value[index]
     return {}
 
@@ -412,10 +442,9 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
         raw.get("trackingNumber") or package.get("pin") or shipment.get("shipmentPin")
     )
     status_code = last_event.get("code")
-    if (
-        (package.get("status") or {}).get("code") == _DELIVERED_STATUS_CODE
-        or (shipment.get("status") or {}).get("code") == _DELIVERED_STATUS_CODE
-    ):
+    if (package.get("status") or {}).get("code") == _DELIVERED_STATUS_CODE or (
+        shipment.get("status") or {}
+    ).get("code") == _DELIVERED_STATUS_CODE:
         status = ParcelStatus.DELIVERED
     else:
         status = map_parcel_status(status_code)
@@ -487,14 +516,12 @@ def apply_delivered_filter(parcels: list[dict], entry: ConfigEntry) -> list[dict
     shows.
     """
     options = entry.options
-    filter_type = options.get(
-        CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
-    )
+    filter_type = options.get(CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE)
     amount = int(
         options.get(CONF_DELIVERED_FILTER_AMOUNT, DEFAULT_DELIVERED_FILTER_AMOUNT)
     )
     if filter_type == "days":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=amount)
+        cutoff = datetime.now(UTC) - timedelta(days=amount)
         return [
             parcel
             for parcel in parcels

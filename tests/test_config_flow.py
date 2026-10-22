@@ -1,4 +1,5 @@
 """Tests for the Purolator config and options flow."""
+
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.purolator.config_flow import (
@@ -83,7 +84,9 @@ async def _submit_codes(hass, entry, step_id: str, codes: list[str]):
 
 async def test_options_parcel_list_can_be_cleared(hass):
     """A submitted empty list removes the final manually tracked parcel."""
-    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]})
+    entry = MockConfigEntry(
+        domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]}
+    )
     entry.add_to_hass(hass)
     result = await _submit_codes(hass, entry, "incoming_parcels", [])
     assert result["type"] == "create_entry"
@@ -114,8 +117,14 @@ async def test_options_one_direction_leaves_the_other_alone(hass):
         domain=DOMAIN,
         options={
             CONF_PARCELS: [
-                {CONF_TRACKING_CODE: "EXAMPLE111111", CONF_DIRECTION: DIRECTION_INCOMING},
-                {CONF_TRACKING_CODE: "EXAMPLE222222", CONF_DIRECTION: DIRECTION_OUTGOING},
+                {
+                    CONF_TRACKING_CODE: "EXAMPLE111111",
+                    CONF_DIRECTION: DIRECTION_INCOMING,
+                },
+                {
+                    CONF_TRACKING_CODE: "EXAMPLE222222",
+                    CONF_DIRECTION: DIRECTION_OUTGOING,
+                },
             ]
         },
     )
@@ -132,7 +141,10 @@ async def test_options_resubmitting_a_code_moves_it(hass):
         domain=DOMAIN,
         options={
             CONF_PARCELS: [
-                {CONF_TRACKING_CODE: "EXAMPLE111111", CONF_DIRECTION: DIRECTION_INCOMING}
+                {
+                    CONF_TRACKING_CODE: "EXAMPLE111111",
+                    CONF_DIRECTION: DIRECTION_INCOMING,
+                }
             ]
         },
     )
@@ -150,7 +162,10 @@ async def test_options_list_shows_only_its_own_direction(hass):
         options={
             CONF_PARCELS: [
                 {CONF_TRACKING_CODE: "EXAMPLE111111"},
-                {CONF_TRACKING_CODE: "EXAMPLE222222", CONF_DIRECTION: DIRECTION_OUTGOING},
+                {
+                    CONF_TRACKING_CODE: "EXAMPLE222222",
+                    CONF_DIRECTION: DIRECTION_OUTGOING,
+                },
             ]
         },
     )
@@ -180,7 +195,12 @@ async def test_options_settings_preserve_parcel_list(hass):
     entry.add_to_hass(hass)
     result = await _open_options_step(hass, entry, "settings")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_DELIVERED_FILTER_TYPE: "days", CONF_DELIVERED_FILTER_AMOUNT: 7, CONF_INCLUDE_HISTORY: False}
+        result["flow_id"],
+        {
+            CONF_DELIVERED_FILTER_TYPE: "days",
+            CONF_DELIVERED_FILTER_AMOUNT: 7,
+            CONF_INCLUDE_HISTORY: False,
+        },
     )
     assert result["type"] == "create_entry"
     assert result["data"][CONF_PARCELS] == parcels

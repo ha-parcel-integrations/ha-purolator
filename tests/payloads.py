@@ -3,6 +3,7 @@
 Built from the documented response shape with made-up tracking codes; no real
 parcel data.
 """
+
 from __future__ import annotations
 
 ACTIVE_CODE = "TST000000002"
@@ -76,7 +77,9 @@ def delivered_sample(code: str = DELIVERED_CODE) -> dict:
     return _response(
         code,
         [
-            event("9000", "2026-01-01 12:00:00", "Shipment delivered", reasonCode="OSNR"),
+            event(
+                "9000", "2026-01-01 12:00:00", "Shipment delivered", reasonCode="OSNR"
+            ),
             event("4200", "2026-01-01 09:00:00", "On vehicle for delivery"),
             event("1300", "2025-12-31 15:00:00", "Departed sort facility"),
             event("2380", "2025-12-30 08:00:00", "Picked up by Purolator"),
@@ -90,7 +93,7 @@ def delivered_sample(code: str = DELIVERED_CODE) -> dict:
 
 def active_sample(code: str = ACTIVE_CODE) -> dict:
     """An out-for-delivery parcel with an estimated delivery date."""
-    sample = _response(
+    return _response(
         code,
         [
             event("4200", "2026-01-01 09:00:00", "On vehicle for delivery"),
@@ -102,14 +105,19 @@ def active_sample(code: str = ACTIVE_CODE) -> dict:
         estimated="2026-01-01",
         delivered_at=None,
     )
-    return sample
 
 
 def pickup_sample(code: str = ACTIVE_CODE) -> dict:
     """A parcel waiting for collection."""
     return _response(
         code,
-        [event("9550", "2026-01-01 10:00:00", "Available for pickup for 5 business days")],
+        [
+            event(
+                "9550",
+                "2026-01-01 10:00:00",
+                "Available for pickup for 5 business days",
+            )
+        ],
         status_code="INT",
         status_description="In transit",
         estimated=None,
@@ -136,7 +144,13 @@ def registered_sample(code: str = ACTIVE_CODE) -> dict:
     """A parcel whose label exists but has not been picked up."""
     return _response(
         code,
-        [event("3010", "2026-01-01 08:00:00", "Label information electronically submitted")],
+        [
+            event(
+                "3010",
+                "2026-01-01 08:00:00",
+                "Label information electronically submitted",
+            )
+        ],
         status_code="INT",
         status_description="In transit",
         estimated=None,

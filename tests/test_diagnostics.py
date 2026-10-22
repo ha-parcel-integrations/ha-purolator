@@ -1,10 +1,9 @@
 """Tests for Purolator diagnostics."""
+
 from datetime import timedelta
 from unittest.mock import MagicMock
 
-from custom_components.purolator.diagnostics import (
-    async_get_config_entry_diagnostics,
-)
+from custom_components.purolator.diagnostics import async_get_config_entry_diagnostics
 
 from .payloads import DELIVERED_CODE, delivered_sample
 
@@ -29,7 +28,9 @@ async def test_diagnostics_redacts_and_counts(hass):
         }
     ]
     entry.runtime_data.coordinator.delivered = []
-    entry.runtime_data.coordinator.outgoing = [{"barcode": "OUT1", "raw": {"pin": "OUT1"}}]
+    entry.runtime_data.coordinator.outgoing = [
+        {"barcode": "OUT1", "raw": {"pin": "OUT1"}}
+    ]
     entry.runtime_data.coordinator.delivered_outgoing = []
     entry.runtime_data.coordinator.delivered_codes = set()
 

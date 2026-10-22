@@ -1,4 +1,5 @@
 """Purolator public tracking API client."""
+
 from __future__ import annotations
 
 import logging
@@ -25,7 +26,11 @@ def _warn_once(key: str, message: str, *args: object) -> None:
     if key in _warned:
         return
     _warned.add(key)
-    _LOGGER.warning(message + " Open an issue and paste this line: %s", *args, NEW_ISSUE_URL)
+    _LOGGER.warning(
+        "%s Open an issue and paste this line: %s",
+        message % args,
+        NEW_ISSUE_URL,
+    )
 
 
 class PurolatorApiError(Exception):
@@ -87,7 +92,9 @@ class PurolatorApiClient:
             if status == 429:
                 retry_after_header = response.headers.get("Retry-After")
                 try:
-                    retry_after = float(retry_after_header) if retry_after_header else None
+                    retry_after = (
+                        float(retry_after_header) if retry_after_header else None
+                    )
                 except ValueError:
                     retry_after = None  # an HTTP-date, not seconds
                 raise PurolatorApiError(
@@ -123,8 +130,7 @@ class PurolatorApiClient:
         if search_status != "FOUND":
             _warn_once(
                 "search-status",
-                "Purolator returned an unexpected search result "
-                "(response keys: %s).",
+                "Purolator returned an unexpected search result (response keys: %s).",
                 sorted(payload),
             )
             raise PurolatorApiError("unexpected search result")
