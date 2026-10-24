@@ -87,6 +87,13 @@ def test_parcel_sensor_status_and_attributes():
     assert sensor.extra_state_attributes["barcode"] == "A"
 
 
+def test_parcel_sensor_finds_outgoing_parcel():
+    parcel = _parcel("C", status=ParcelStatus.IN_TRANSIT)
+    sensor = PurolatorParcelSensor(_coordinator([], outgoing=[parcel]), _entry(), "C")
+    assert sensor.native_value == ParcelStatus.IN_TRANSIT
+    assert sensor.extra_state_attributes["barcode"] == "C"
+
+
 def test_parcel_sensor_missing_barcode():
     sensor = PurolatorParcelSensor(_coordinator([_parcel("A")]), _entry(), "OTHER")
     assert sensor.native_value is None

@@ -219,7 +219,7 @@ class PurolatorParcelSensor(CoordinatorEntity[PurolatorCoordinator], SensorEntit
         self._attr_device_info = build_device_info(entry)
 
     def _get_parcel(self) -> dict[str, Any] | None:
-        for parcel in self.coordinator.data or []:
+        for parcel in _active_parcels(self.coordinator):
             if parcel.get("barcode") == self._barcode:
                 return parcel
         return None
