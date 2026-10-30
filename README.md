@@ -135,6 +135,7 @@ Standard HA removal applies: **Settings → Devices & Services → Purolator →
 | `sensor.purolator_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `sensor.purolator_outgoing_parcels` | Number of active parcels you sent, full list under the `parcels` attribute |
 | `sensor.purolator_outgoing_delivered_parcels` | Parcels you sent that have since been delivered (see the retention option) |
+| `calendar.purolator_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
 | `sensor.purolator_last_successful_update` | Diagnostic: when Purolator was last polled successfully |
 
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
@@ -204,7 +205,7 @@ logger:
 
 - **A parcel shows `unknown`** — Purolator has not registered it yet (the tracking site answers "not found" until the first scan), or the code is wrong. It will pick up automatically once scanned.
 - **Updates keep failing** — Purolator is refusing or challenging the requests. The integration backs off and retries; there is nothing to configure. If it persists across days, [open an issue](https://github.com/ha-parcel-integrations/ha-purolator/issues/new).
-- **A status logs "Unrecognised Purolator status"** — please [open an issue](https://github.com/ha-parcel-integrations/ha-purolator/issues/new) with the logged line so the mapping can be extended.
+- **A status logs "Unrecognised Purolator status"** — please [open an issue](https://github.com/ha-parcel-integrations/ha-purolator/issues/new?template=unrecognised_status.yml) with the logged line so the mapping can be extended.
 
 ## Related integrations
 
