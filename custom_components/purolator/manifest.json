@@ -1,6 +1,7 @@
 {
   "domain": "purolator",
   "name": "Purolator",
+  "categories": ["productivity_information"],
   "codeowners": [
     "@peter-mdf"
   ],
