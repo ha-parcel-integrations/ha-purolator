@@ -7,6 +7,7 @@ from custom_components.purolator.const import ParcelStatus
 from custom_components.purolator.sensor import (
     PurolatorAwaitingPickupSensor,
     PurolatorDeliveredParcelsSensor,
+    PurolatorEnRouteToPickupPointSensor,
     PurolatorIncomingParcelsSensor,
     PurolatorLastUpdateSensor,
     PurolatorNextDeliverySensor,
@@ -43,6 +44,7 @@ def _parcel(
     status: ParcelStatus = ParcelStatus.IN_TRANSIT,
     pickup: bool = False,
     planned_from: str | None = None,
+    planned_to: str | None = None,
 ) -> dict:
     return {
         "carrier": "Purolator",
@@ -52,6 +54,7 @@ def _parcel(
         "status": status,
         "pickup": pickup,
         "planned_from": planned_from,
+        "planned_to": planned_to,
     }
 
 
@@ -103,12 +106,12 @@ def test_parcel_sensor_missing_barcode():
 def test_next_delivery_picks_earliest():
     coordinator = _coordinator(
         [
-            _parcel("A", planned_from="2026-05-02T10:00:00Z"),
-            _parcel("B", planned_from="2026-05-01T10:00:00Z"),
+            _parcel("A", planned_from="2099-05-02T10:00:00Z"),
+            _parcel("B", planned_from="2099-05-01T10:00:00Z"),
         ]
     )
     sensor = PurolatorNextDeliverySensor(coordinator, _entry())
-    assert sensor.native_value == datetime(2026, 5, 1, 10, 0, tzinfo=UTC)
+    assert sensor.native_value == datetime(2099, 5, 1, 10, 0, tzinfo=UTC)
     assert sensor.extra_state_attributes["barcode"] == "B"
 
 
@@ -122,7 +125,7 @@ def test_next_delivery_skips_unparseable_moment():
     coordinator = _coordinator(
         [
             _parcel("A", planned_from="not-a-date"),
-            _parcel("B", planned_from="2026-05-01T10:00:00Z"),
+            _parcel("B", planned_from="2099-05-01T10:00:00Z"),
         ]
     )
     sensor = PurolatorNextDeliverySensor(coordinator, _entry())
@@ -181,7 +184,40 @@ def test_awaiting_pickup_ignores_outgoing_parcels():
 
 def test_next_delivery_ignores_outgoing_parcels():
     coordinator = _coordinator(
-        [], outgoing=[_parcel("C", planned_from="2026-05-01T10:00:00Z")]
+        [], outgoing=[_parcel("C", planned_from="2099-05-01T10:00:00Z")]
     )
     sensor = PurolatorNextDeliverySensor(coordinator, _entry())
     assert sensor.native_value is None
+
+
+def test_next_delivery_skips_a_window_that_has_ended():
+    coordinator = _coordinator(
+        [
+            _parcel("OLD", planned_from="2000-01-01T00:00:00Z"),
+            _parcel(
+                "ENDED",
+                planned_from="2000-01-01T00:00:00Z",
+                planned_to="2000-01-01T23:59:59Z",
+            ),
+            _parcel("NEXT", planned_from="2099-05-01T10:00:00Z"),
+        ]
+    )
+    sensor = PurolatorNextDeliverySensor(coordinator, _entry())
+    assert sensor.extra_state_attributes["barcode"] == "NEXT"
+
+
+def test_en_route_excludes_arrived_returning_and_non_pickup_parcels():
+    en_route = _parcel("A", ParcelStatus.IN_TRANSIT, pickup=True)
+    coordinator = _coordinator(
+        [
+            en_route,
+            _parcel("B", ParcelStatus.AT_PICKUP_POINT, pickup=True),
+            _parcel("C", ParcelStatus.RETURNING, pickup=True),
+            _parcel("D", ParcelStatus.IN_TRANSIT),
+        ]
+    )
+    sensor = PurolatorEnRouteToPickupPointSensor(coordinator, _entry())
+    assert sensor.native_value == 1
+    assert sensor.extra_state_attributes["parcels"] == [en_route]
+    awaiting = PurolatorAwaitingPickupSensor(coordinator, _entry())
+    assert {p["barcode"] for p in awaiting.extra_state_attributes["parcels"]} == {"B"}

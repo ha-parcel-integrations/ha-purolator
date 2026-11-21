@@ -349,7 +349,7 @@ def test_normalize_active_parcel_has_point_estimate():
     assert parcel["status"] == ParcelStatus.OUT_FOR_DELIVERY
     assert parcel["delivered"] is False
     assert parcel["planned_from"] == "2026-01-01T00:00:00-05:00"
-    assert parcel["planned_to"] is None
+    assert parcel["planned_to"] == "2026-01-01T23:59:59-05:00"
 
 
 def test_normalize_without_estimate_has_no_window():

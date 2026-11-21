@@ -35,10 +35,11 @@ you act in one of these areas:
   summary+diagnostic sensors. Add a new non-parcel sensor's unique_id to the set.
 - **Per-parcel sensors are removed by the summary sensor** via
   `entity_registry.async_remove` (self-removal races and leaves ghosts).
-- **The optional pickup-point summaries are a pair.** A carrier that can tell
-  a parcel is destined for a pickup point exposes
-  `en_route_to_pickup_point` for `pickup is true` before it arrives; one that
-  can reach `ParcelStatus.AT_PICKUP_POINT` also exposes `awaiting_pickup`.
+- **The pickup-point summaries are a pair.** A carrier that can deliver to a
+  pickup point or locker exposes both `en_route_to_pickup_point` and
+  `awaiting_pickup`, even before a real parcel has shown the status or flag
+  (they read 0 until then; record it in `PENDING_*`). A carrier without pickup
+  points exposes neither and keeps `pickup` constantly False.
   See *Parcel contract* in `CONVENTIONS.md`. Say "pickup point", not
   "ServicePoint"/"parcel shop"/"locker", for the generic concept; the
   example carrier demonstrates both canonical sensors.
@@ -86,24 +87,30 @@ or package, and an unexpected or empty search result.
 - **Event times have no offset.** The province on each event picks the zone
   (split-zone provinces use their majority zone); a scan without a province
   takes the first zone found on the parcel, and Home Assistant's timezone is
-  the last resort. The ETA is a bare date, mapped to midnight in the last
-  event's zone as `planned_from` only.
-- **Fields that are `None` on purpose:** `sender`, `receiver`, `dimensions`,
-  `planned_to`. `weight` is converted to kg and only set for single-piece
+  the last resort. The ETA is a bare date: `planned_from` is local `00:00:00`
+  and `planned_to` local `23:59:59` of that day, in the last event's zone
+  (Home Assistant's when that event has no province). Arrival at a pickup
+  point, a return and a delivery empty the window.
+- **Fields that are `None` on purpose:** `sender`, `receiver`, `dimensions`.
+  `weight` is converted to kg and only set for single-piece
   shipments. `CAPABILITIES` matches.
 - **`pickup_point` is pending**, not absent: `9550` ("Available for pickup for
   5 business days from arrival date at the counter") is confirmed as a status,
   but no captured parcel named the counter in a field, so whether one exists is
   still open. It stays `None` until a real pickup parcel shows it.
+- **`pickup`** has no structured route field here; it is true once any event
+  maps to `AT_PICKUP_POINT` (`9550`) and stays true after collection. A parcel
+  therefore only becomes a pickup parcel on arrival, so
+  `en_route_to_pickup_point` reads 0 until a real parcel shows the pickup
+  route before arrival (unconfirmed). `pickup_point` is the pending capability
+  (`PENDING_CAPABILITIES`). Both pickup sensors exist.
 - **Outgoing parcels** follow the account-less pattern: the user files each
   code under Incoming or Outgoing (`direction` on the options entries,
   default incoming), because the response cannot reveal it. Outgoing has its
   own lists, two summary sensors and the status-changed/delivered event pair;
-  no registered or delivery-time event. `awaiting_pickup`, `next_delivery` and
-  the calendar stay incoming-only.
-- **No `en_route_to_pickup_point` sensor.** It is optional, and a parcel only
-  becomes a pickup-point parcel on arrival here, so it would sit at zero.
-  `awaiting_pickup` stays.
+  no registered or delivery-time event. `awaiting_pickup`,
+  `en_route_to_pickup_point`, `next_delivery` and the calendar stay
+  incoming-only.
 - **Out of scope:** proof of delivery, the business API route, challenge or
   captcha handling.
 - **Diagnostics** redact the code, the URL, all receiver, signature, proof and

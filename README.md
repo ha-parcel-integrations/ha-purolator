@@ -40,7 +40,7 @@ A custom Home Assistant integration that tracks your [Purolator](https://www.pur
 - Track any number of Purolator parcels by tracking code — no account needed
 - Per-parcel sensor with the canonical status (`registered` / `in_transit` / `out_for_delivery` / `delivered` / …), the carrier's own status text, the expected delivery date and a tracking deep-link
 - Incoming and outgoing parcels tracked side by side, counted separately
-- Summary sensors: incoming parcels, parcels awaiting pickup, next delivery, recently delivered parcels, outgoing parcels, delivered outgoing parcels
+- Summary sensors: incoming parcels, parcels on their way to a pickup point, parcels awaiting pickup, next delivery, recently delivered parcels, outgoing parcels, delivered outgoing parcels
 - Read-only **Deliveries** calendar with the expected delivery dates
 - `purolator.track_parcel` / `purolator.untrack_parcel` services, so a dashboard button can add a parcel
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered, delivery time changed — plus status changed and delivered for outgoing parcels)
@@ -116,7 +116,7 @@ what your tracked parcels are actually doing:
   hub out there polls at exactly the same second.
 
 Purolator only reports an estimated delivery *date*, not a time window, so
-that date is treated as the start of an expected delivery day. The cadence is
+that date is published as the whole day, from 00:00 to 23:59:59 local time. The cadence is
 deliberately slower than other carriers, and the integration backs off when
 Purolator refuses a request. It never falls back to any other method.
 
@@ -130,6 +130,7 @@ Standard HA removal applies: **Settings → Devices & Services → Purolator →
 |---|---|
 | `sensor.purolator_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.purolator_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
+| `sensor.purolator_en_route_to_pickup_point` | Number of incoming parcels heading for a pickup point that have not arrived yet, full list under the `parcels` attribute |
 | `sensor.purolator_awaiting_pickup` | Number of incoming parcels waiting at a pickup point, full list under the `parcels` attribute |
 | `sensor.purolator_next_delivery` | Earliest expected delivery moment across all active parcels |
 | `sensor.purolator_delivered_parcels` | Recently delivered parcels (see the retention option) |
