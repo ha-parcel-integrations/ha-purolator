@@ -19,6 +19,7 @@ async def test_diagnostics_redacts_and_counts(hass):
             "barcode": "EXAMPLE123456",
             "sender": "Example Shop",
             "receiver": "Jane Doe",
+            "contents": "Running shoes",
             "status": "out_for_delivery",
             "raw": {
                 "trackingNumber": "EXAMPLE123456",
@@ -36,6 +37,7 @@ async def test_diagnostics_redacts_and_counts(hass):
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
+    assert result["incoming"][0]["contents"] == "**REDACTED**"
     assert result["outgoing"][0]["barcode"] == "**REDACTED**"
     assert result["outgoing"][0]["raw"]["pin"] == "**REDACTED**"
     assert result["counts"] == {

@@ -43,6 +43,7 @@ A custom Home Assistant integration that tracks your [Purolator](https://www.pur
 - Summary sensors: incoming parcels, parcels on their way to a pickup point, parcels awaiting pickup, next delivery, recently delivered parcels, outgoing parcels, delivered outgoing parcels
 - Read-only **Deliveries** calendar with the expected delivery dates
 - `purolator.track_parcel` / `purolator.untrack_parcel` services, so a dashboard button can add a parcel
+- `purolator.update_contents` service (and a `contents` field on `track_parcel`) to note what is in a parcel; it titles the calendar event and shows on the next-delivery sensor
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered, delivery time changed — plus status changed and delivered for outgoing parcels)
 - Opt-in per-parcel status history
 - Manual refresh button and a diagnostic last-update sensor
@@ -180,8 +181,11 @@ Every payload is the full normalised parcel plus the hub's `device_id`. Events a
 
 | Service | Fields | Description |
 |---|---|---|
-| `purolator.track_parcel` | `tracking_code`, `direction` | Start tracking a parcel. `direction` is `incoming` (default) or `outgoing`; calling it again with the other direction moves an already tracked parcel |
+| `purolator.track_parcel` | `tracking_code`, `direction`, `contents` (optional) | Start tracking a parcel. `direction` is `incoming` (default) or `outgoing`; calling it again with the other direction moves an already tracked parcel |
 | `purolator.untrack_parcel` | `tracking_code` | Stop tracking a parcel |
+| `purolator.update_contents` | `tracking_code`, `contents` | Set, replace or clear (empty text) a note on what is in a parcel |
+
+The `contents` text is stored locally, never sent to Purolator, and fills the parcel's `contents` field; it titles the parcel's calendar event and shows on the next-delivery sensor.
 
 ## Examples
 

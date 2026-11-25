@@ -33,7 +33,15 @@ PLATFORMS = [Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
 # subset of this — it exists so a typo in CAPABILITIES fails a test instead of
 # silently dropping a carrier off a table on the docs site.
 KNOWN_CAPABILITIES = frozenset(
-    {"weight", "dimensions", "delivery_window", "pickup_point", "url", "history"}
+    {
+        "weight",
+        "dimensions",
+        "delivery_window",
+        "pickup_point",
+        "url",
+        "history",
+        "contents",
+    }
 )
 
 # Every value not listed here comes back as a literal ``None`` from
@@ -95,6 +103,7 @@ API_KEY = "NneqHVQEJO5CkHcsiPXqJ8cTAngvBR1D3Rcu3baQ"
 # fields slot in without an options migration.
 CONF_PARCELS = "parcels"
 CONF_TRACKING_CODE = "tracking_code"
+CONF_CONTENTS = "contents"
 
 # Which way a parcel is going. The response cannot tell a parcel the user sends
 # from one they receive and there is no account identity to compare against, so

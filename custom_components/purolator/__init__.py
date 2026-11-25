@@ -11,6 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import PurolatorApiClient
 from .const import API_KEY, PLATFORMS
+from .contents import ContentsStore
 from .coordinator import PurolatorCoordinator
 from .services import async_setup_services, async_unload_services
 
@@ -32,6 +33,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: PurolatorConfigEntry) ->
     """Set up Purolator from a config entry."""
     client = PurolatorApiClient(async_get_clientsession(hass), API_KEY)
     coordinator = PurolatorCoordinator(hass, client, entry)
+
+    await coordinator.contents_store.async_load()
 
     # Fetch initial data here, before forwarding to platforms. Raising
     # ConfigEntryNotReady from a forwarded platform is too late for HA to catch
@@ -72,3 +75,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: PurolatorConfigEntry) -
     # always go when the entry unloads.
     async_unload_services(hass)
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: PurolatorConfigEntry) -> None:
+    """Delete the contents the user set for the removed entry."""
+    await ContentsStore(hass, entry.entry_id).async_remove()
